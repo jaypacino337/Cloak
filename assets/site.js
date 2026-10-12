@@ -10,6 +10,43 @@
   );
   document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 
+  // ---------- settings from config.js ----------
+  const cfg = window.CLOAK_CONFIG || {};
+  const mint = (cfg.token?.mint || "").trim();
+  const tokenTicker = (cfg.token?.ticker || "").trim().replace(/^\$/, "");
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) {
+    const label = tokenTicker ? `$${tokenTicker}` : "Token";
+    const short = `${mint.slice(0, 4)}…${mint.slice(-4)}`;
+    document.getElementById("token")?.classList.remove("hidden");
+    document.querySelectorAll("[data-ticker]").forEach((n) => (n.textContent = label));
+    const ca = document.getElementById("ca-text");
+    if (ca) ca.textContent = mint;
+    const pump = document.getElementById("pump-link");
+    if (pump) pump.href = `https://pump.fun/coin/${mint}`;
+    const note = document.getElementById("hero-note");
+    if (note) note.textContent = "No sign-up · no account · keys never leave your browser";
+    const nav = document.getElementById("nav-token");
+    if (nav) { nav.textContent = `${label} · ${short}`; nav.classList.remove("hidden"); }
+    const faq = document.getElementById("faq-token");
+    if (faq) faq.textContent = `Yes. ${label} is a community token launched on pump.fun, contract ${mint}. It isn't a share of anything and gives no revenue, rights or special access. The app works the same without it. Always check the contract address against this site before you buy.`;
+    document.querySelectorAll("[data-copy-ca]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        const original = b.textContent;
+        try { await navigator.clipboard.writeText(mint); b.textContent = "Copied ✓"; }
+        catch { b.textContent = mint; }
+        setTimeout(() => (b.textContent = original), 1600);
+      })
+    );
+  } else if (mint) {
+    console.warn("config.js: token.mint doesn't look like a Solana address, so the token section stays hidden.");
+  }
+  for (const [key, url] of Object.entries(cfg.links || {})) {
+    document.querySelectorAll(`[data-link="${key}"]`).forEach((a) => {
+      if (/^https:\/\//.test(url || "")) { a.href = url; a.classList.remove("hidden"); }
+      else if (key !== "github") a.classList.add("hidden");
+    });
+  }
+
   // ---------- ticker ----------
   const ticker = document.getElementById("ticker");
   if (ticker) {

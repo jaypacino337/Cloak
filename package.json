@@ -1,0 +1,12 @@
+{
+  "name": "cloak",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloak: your wallet, off the record. Static site + devnet app.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

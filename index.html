@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cloak — money that doesn't gossip</title>
+  <title>Cloak — your wallet, off the record</title>
   <meta name="description" content="Cloak is a pocket for your Solana wallet. Move funds in, walk out through addresses nobody has seen, and keep the receipts to yourself." />
   <meta name="theme-color" content="#f4f0e8" />
-  <meta property="og:title" content="Cloak — money that doesn't gossip" />
+  <meta property="og:title" content="Cloak — your wallet, off the record" />
   <meta property="og:description" content="A pocket for your Solana wallet. Keys stay in your browser. Try it free on devnet." />
   <meta property="og:image" content="https://jaypacino337.github.io/Cloak/assets/og.png" />
   <meta property="og:url" content="https://jaypacino337.github.io/Cloak/" />
@@ -28,6 +28,7 @@
         <a href="#fineprint">Fine print</a>
         <a href="#faq">FAQ</a>
       </nav>
+      <button class="btn btn-line btn-sm hidden" id="nav-token" data-copy-ca title="Copy contract address"></button>
       <a class="btn btn-ink btn-sm" href="app.html">Open Cloak <span class="arrow">→</span></a>
     </div>
   </header>
@@ -38,7 +39,7 @@
       <div class="wrap hero-grid">
         <div>
           <span class="kicker"><span class="blip"></span>Live on Solana devnet</span>
-          <h1>Money that doesn't <em>gossip.</em></h1>
+          <h1>Your wallet, <em>off the record.</em></h1>
           <p class="lede">
             On Solana, every payment tells the person you paid what's in your wallet and where it's been.
             Cloak gives your funds a quiet place to wait, then sends them on through addresses nobody has seen before.
@@ -47,7 +48,7 @@
             <a class="btn btn-signal" href="app.html">Try it free <span class="arrow">→</span></a>
             <a class="btn btn-line" href="#ritual">How it works</a>
           </div>
-          <p class="cta-note" style="margin-top:16px">No sign-up · no token · keys never leave your browser</p>
+          <p class="cta-note" style="margin-top:16px" id="hero-note">No sign-up · no token · keys never leave your browser</p>
         </div>
 
         <div class="art" aria-hidden="true">
@@ -237,6 +238,27 @@
       </div>
     </section>
 
+    <!-- TOKEN (shown only when config.js has a mint) -->
+    <section id="token" class="hidden" style="padding-top:20px">
+      <div class="wrap">
+        <div class="chapter now token-card reveal">
+          <div>
+            <span class="label">Community token</span>
+            <h2 class="serif" style="color:var(--paper)"><em data-ticker></em></h2>
+            <p>Launched on pump.fun. It's a community token, not a share of anything: it gives you no revenue, rights or special access, and the Cloak app works the same without it. Only buy what you can afford to lose.</p>
+          </div>
+          <div class="ca-box">
+            <span class="sub">contract address</span>
+            <code id="ca-text"></code>
+            <div class="row">
+              <button class="btn btn-signal btn-sm" data-copy-ca>Copy CA</button>
+              <a class="btn btn-line btn-sm" id="pump-link" target="_blank" rel="noopener" style="color:var(--paper);border-color:var(--paper)">View on pump.fun ↗</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- FAQ -->
     <section id="faq" style="padding-top:40px">
       <div class="wrap faq">
@@ -245,7 +267,7 @@
           <h2>Fair <em>questions.</em></h2>
         </div>
         <div>
-          <details><summary>Is there a Cloak token?</summary><p>No. There's no token, presale, airdrop or "early access" list. If someone offers you one, it isn't from this project.</p></details>
+          <details><summary>Is there a Cloak token?</summary><p id="faq-token">No. There's no token, presale, airdrop or "early access" list. If someone offers you one, it isn't from this project.</p></details>
           <details><summary>Can you see or freeze my funds?</summary><p>No. Cloak has no server, so there's nothing to see and no switch to flip. Your pocket key exists only inside your encrypted vault, which also means nobody can recover it if you lose your passphrase and your backup.</p></details>
           <details><summary>Why only devnet?</summary><p>Today the hop into your pocket is still visible on-chain. Running on mainnet before the shared pool and the audit exist would give people a false sense of safety. Devnet SOL is free, so you can try every feature without risk.</p></details>
           <details><summary>Which wallets work?</summary><p>Phantom on desktop, or Phantom's in-app browser on mobile. Turn on Testnet Mode in Phantom (Settings → Developer Settings) so your balance shows devnet SOL.</p></details>
@@ -271,13 +293,16 @@
           <a href="#ritual">How it works</a>
           <a href="#fineprint">Fine print</a>
           <a href="app.html">App</a>
-          <a href="https://github.com/jaypacino337/Cloak">Source</a>
+          <a href="https://github.com/jaypacino337/Cloak" data-link="github">Source</a>
+          <a class="hidden" data-link="x" target="_blank" rel="noopener">X</a>
+          <a class="hidden" data-link="telegram" target="_blank" rel="noopener">Telegram</a>
         </nav>
       </div>
       <div class="wordmark">cloak<b>.</b></div>
     </div>
   </footer>
 
+  <script src="assets/config.js"></script>
   <script src="assets/site.js"></script>
 </body>
 </html>

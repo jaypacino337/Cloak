@@ -13,14 +13,19 @@
 
   const CLUSTER = "devnet";
   // Optional ?rpc=https://your-node for people who'd rather not use the public endpoint.
-  const RPC = (() => {
-    const custom = new URLSearchParams(location.search).get("rpc");
+  // Otherwise config.js rpcUrl (e.g. a Helius devnet link), otherwise the public devnet node.
+  const validUrl = (u) => {
     try {
-      if (custom && /^https?:$/.test(new URL(custom).protocol)) return custom;
-    } catch {}
-    return clusterApiUrl(CLUSTER);
-  })();
-  const CUSTOM_RPC = RPC !== clusterApiUrl(CLUSTER);
+      return !!u && /^https?:$/.test(new URL(u).protocol);
+    } catch {
+      return false;
+    }
+  };
+  const queryRpc = new URLSearchParams(location.search).get("rpc");
+  const configRpc = (window.CLOAK_CONFIG?.rpcUrl || "").trim();
+  const RPC = validUrl(queryRpc) ? queryRpc : validUrl(configRpc) ? configRpc : clusterApiUrl(CLUSTER);
+  // Only a ?rpc= override may point somewhere other than devnet (e.g. a local validator).
+  const CUSTOM_RPC = RPC === queryRpc;
   const STORAGE_KEY = "cloak.vault.v1";
   const PBKDF2_ITERATIONS = 310000;
   const FEE_LAMPORTS = 5000;
@@ -612,5 +617,6 @@
   }
 
   if (CUSTOM_RPC) log(`Using custom RPC ${RPC}`);
+  else if (RPC !== clusterApiUrl(CLUSTER)) log("Using your RPC from config.js");
   render();
 })();
