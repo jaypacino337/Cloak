@@ -3,167 +3,281 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cloak — private moves on Solana</title>
-  <meta name="description" content="Cloak breaks the public trail between your Solana wallet and where your money goes. Open source, client-side keys, devnet preview." />
+  <title>Cloak — money that doesn't gossip</title>
+  <meta name="description" content="Cloak is a pocket for your Solana wallet. Move funds in, walk out through addresses nobody has seen, and keep the receipts to yourself." />
+  <meta name="theme-color" content="#f4f0e8" />
+  <meta property="og:title" content="Cloak — money that doesn't gossip" />
+  <meta property="og:description" content="A pocket for your Solana wallet. Keys stay in your browser. Try it free on devnet." />
+  <meta property="og:image" content="https://jaypacino337.github.io/Cloak/assets/og.png" />
+  <meta property="og:url" content="https://jaypacino337.github.io/Cloak/" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/styles.css" />
 </head>
 <body>
   <header class="nav">
     <div class="wrap">
-      <a class="brand" href="#"><img src="assets/logo.svg" alt="" />Cloak</a>
+      <a class="brand" href="#top"><img src="assets/logo.svg" alt="" /><span>cloak<b>.</b></span></a>
       <nav class="nav-links">
-        <a href="#problem">Why</a>
-        <a href="#flow">How it works</a>
-        <a href="#hidden">What's hidden</a>
-        <a href="#status">Status</a>
+        <a href="#exhibit">The leak</a>
+        <a href="#ritual">How it works</a>
+        <a href="#engine">Under the hood</a>
+        <a href="#fineprint">Fine print</a>
         <a href="#faq">FAQ</a>
       </nav>
-      <a class="btn btn-primary btn-sm" href="app.html">Launch app</a>
+      <a class="btn btn-ink btn-sm" href="app.html">Open Cloak <span class="arrow">→</span></a>
     </div>
   </header>
 
-  <main>
+  <main id="top">
+    <!-- HERO -->
     <div class="hero">
       <div class="wrap hero-grid">
         <div>
-          <span class="pill"><span class="dot"></span>Devnet preview · open source</span>
-          <h1>Your wallet is a <em>glass house.</em><br />Put up some curtains.</h1>
+          <span class="kicker"><span class="blip"></span>Live on Solana devnet</span>
+          <h1>Money that doesn't <em>gossip.</em></h1>
           <p class="lede">
-            Every Solana transfer you make is permanently readable by anyone. Cloak puts space between the
-            wallet people know is yours and the places your money actually goes.
+            On Solana, every payment tells the person you paid what's in your wallet and where it's been.
+            Cloak gives your funds a quiet place to wait, then sends them on through addresses nobody has seen before.
           </p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="app.html">Try it on devnet →</a>
-            <a class="btn btn-ghost" href="#flow">See the flow</a>
+            <a class="btn btn-signal" href="app.html">Try it free <span class="arrow">→</span></a>
+            <a class="btn btn-line" href="#ritual">How it works</a>
           </div>
+          <p class="cta-note" style="margin-top:16px">No sign-up · no token · keys never leave your browser</p>
         </div>
 
-        <div class="trace" aria-label="Illustration: public transfers versus cloaked transfers">
-          <div class="trace-row"><span class="tag tag-out">public</span><span class="addr">7xKq…f3Ra</span><span class="amt">−42.0 SOL</span></div>
-          <div class="trace-row"><span class="tag tag-out">public</span><span class="addr">7xKq…f3Ra</span><span class="amt">−1,200 USDC</span></div>
-          <div class="trace-row"><span class="tag tag-in">cloak</span><span class="addr">into pocket</span><span class="amt">+42.0 SOL</span></div>
-          <div class="trace-row cloaked"><span class="tag tag-in">cloak</span><span class="addr">9pLm…aa71</span><span class="amt">−18.5 SOL</span></div>
-          <div class="trace-row cloaked"><span class="tag tag-in">cloak</span><span class="addr">3dWe…0cQx</span><span class="amt">−23.5 SOL</span></div>
-          <div class="trace-foot"><span>block 291,044,118</span><span>fresh addresses, no reuse</span></div>
+        <div class="art" aria-hidden="true">
+          <canvas id="drape"></canvas>
+          <span class="art-label l">your trail</span>
+          <span class="art-label r">fresh starts</span>
+          <div class="art-cap"><span>fig. 1 — the drape</span><span><b>●</b> unlinked output</span></div>
         </div>
+      </div>
+
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-track" id="ticker"></div>
       </div>
     </div>
 
-    <section id="problem">
-      <div class="wrap">
-        <div class="section-head">
-          <span class="eyebrow">The problem</span>
-          <h2>One payment is all it takes to expose your whole history.</h2>
-          <p>
-            Pay a friend, a freelancer or a shop once, and they can see your balance, every trade you've made, and
-            every wallet you've ever touched. Explorers and analytics firms index all of it.
-          </p>
-        </div>
-        <div class="cards">
-          <div class="card"><span class="num">01</span><h3>Balances are public</h3><p>Anyone with your address knows what you hold, down to the last lamport.</p></div>
-          <div class="card"><span class="num">02</span><h3>Habits are public</h3><p>When you trade, who you pay, and how often all show up as timestamped patterns.</p></div>
-          <div class="card"><span class="num">03</span><h3>Links are forever</h3><p>Once two wallets touch, the connection can't be deleted. Clustering tools never forget.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="flow">
-      <div class="wrap">
-        <div class="section-head">
-          <span class="eyebrow">How it works</span>
-          <h2>Four moves. Keys never leave your browser.</h2>
-          <p>Cloak runs in your browser. It encrypts its own key material with a passphrase only you know, and it never sends that key material anywhere.</p>
-        </div>
-        <div class="cards">
-          <div class="card"><span class="num">FOLD</span><h3>Open a pocket</h3><p>Create an encrypted vault in your browser. It holds the keys for your pocket account and every fresh address you make.</p></div>
-          <div class="card"><span class="num">SEAL</span><h3>Move funds in</h3><p>Send SOL from Phantom into your pocket. Cloak records a sealed note: a hash commitment to the amount plus a secret.</p></div>
-          <div class="card"><span class="num">SCATTER</span><h3>Step out fresh</h3><p>Withdraw to brand-new addresses in amounts you choose. They have no history and are never reused.</p></div>
-          <div class="card"><span class="num">PROVE</span><h3>Share on your terms</h3><p>Export a read-only view key listing your notes without their secrets, for an accountant or for yourself.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="hidden">
-      <div class="wrap">
-        <div class="section-head">
-          <span class="eyebrow">Honest privacy</span>
-          <h2>What Cloak hides today, and what it doesn't yet.</h2>
-          <p>Privacy tools that overpromise get people hurt. Here's where things stand right now.</p>
-        </div>
-        <div class="split">
-          <div class="card">
-            <h3 class="ok">Hidden now</h3>
-            <ul class="list">
-              <li><b>Address reuse</b>Each withdrawal goes to a never-used address.</li>
-              <li><b>Your keys</b>Generated and encrypted locally (AES-GCM, PBKDF2).</li>
-              <li><b>Note secrets</b>Kept in your vault only, never sent to a server.</li>
-              <li><b>Tracking</b>No analytics, no cookies, no backend.</li>
-            </ul>
+    <!-- EXHIBIT -->
+    <section id="exhibit">
+      <div class="wrap exhibit">
+        <div class="receipt-wrap reveal">
+          <div class="receipt">
+            <h4>The Corner Café</h4>
+            <div class="center">paid in SOL · thanks for visiting</div>
+            <hr />
+            <div class="line"><span>Flat white</span><span>0.031 SOL</span></div>
+            <div class="line"><span>Almond croissant</span><span>0.024 SOL</span></div>
+            <hr />
+            <div class="line"><b>Total</b><b>0.055 SOL</b></div>
+            <hr />
+            <div class="center">what the barista can also see ↓</div>
+            <div class="line leak"><span>Your balance</span><span>412.80 SOL</span></div>
+            <div class="line leak"><span>Last trade</span><span>2h ago · memecoin</span></div>
+            <div class="line leak"><span>Payday</span><span>every 15th</span></div>
+            <div class="line leak"><span>Wallets you touch</span><span>37</span></div>
+            <hr />
+            <div class="center">sig 4vXq…9KeT · permanent</div>
           </div>
-          <div class="card">
-            <h3 class="warn">Not yet hidden</h3>
-            <ul class="list">
-              <li><b>Pocket link</b>Without a shared pool, your wallet → pocket → fresh hop is visible on-chain.</li>
-              <li><b>Amounts</b>SOL transfer amounts are public. Splitting and timing only help a little.</li>
-              <li><b>IP address</b>RPC calls show your IP. Use a VPN or your own RPC.</li>
-              <li><b>Audit</b>Cloak has not been audited. Don't trust it with funds that matter.</li>
-            </ul>
+        </div>
+
+        <div>
+          <span class="label">Exhibit A</span>
+          <h2>One coffee. <em>Your whole financial life.</em></h2>
+          <div class="notes-col">
+            <div class="annot reveal"><span class="n">1</span><div><h3>Receipts never expire</h3><p>A blockchain is a ledger nobody can edit. Anything you did years ago is still there, sorted and searchable.</p></div></div>
+            <div class="annot reveal"><span class="n">2</span><div><h3>Everyone you pay learns your address</h3><p>Once someone has it, a block explorer shows them your balance, your trades and your habits in about ten seconds.</p></div></div>
+            <div class="annot reveal"><span class="n">3</span><div><h3>Data firms connect the dots</h3><p>Analytics companies group wallets that interact into clusters, so one slip can tie together accounts you meant to keep apart.</p></div></div>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="status">
+    <!-- RITUAL -->
+    <section id="ritual" style="padding-top:40px">
       <div class="wrap">
-        <div class="section-head">
-          <span class="eyebrow">Status</span>
-          <h2>Where Cloak is, out loud.</h2>
+        <div class="head reveal">
+          <span class="label">How it works</span>
+          <h2>Four steps, <em>no middleman.</em></h2>
+          <p>Everything runs in the browser tab you already have open. Cloak has no server to trust, no account to make and no one to email about your keys.</p>
         </div>
-        <div class="status">
-          <div class="status-item"><span class="badge badge-done">shipped</span><div><b>Browser vault + devnet app</b><p>Phantom connect, encrypted vault, pocket account, sealed notes, fresh-address withdrawals, and view-key export.</p></div></div>
-          <div class="status-item"><span class="badge badge-next">next</span><div><b>Shared pool program</b><p>An on-chain pool where many deposits mix together, so withdrawals can't be matched to deposits.</p></div></div>
-          <div class="status-item"><span class="badge badge-later">later</span><div><b>Zero-knowledge withdrawals</b><p>Groth16 proofs of note membership with nullifiers, plus relayers that pay fees so fresh addresses never need funding.</p></div></div>
-          <div class="status-item"><span class="badge badge-later">later</span><div><b>Independent audit</b><p>No mainnet deployment until the pool program has been reviewed by a third party.</p></div></div>
+        <div class="steps">
+          <div class="step reveal">
+            <span class="idx">STEP 01</span>
+            <svg viewBox="0 0 92 92" fill="none" stroke="#16130f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 22h52v30c0 14-11.6 24-26 24S20 66 20 52V22z" fill="#fbf8f2"/>
+              <path d="M24 28h44" stroke-dasharray="3 4"/>
+              <path d="M32 22v-4a14 14 0 0 1 28 0v4"/>
+              <rect x="38" y="40" width="16" height="13" rx="3" fill="#e5482b" stroke="#e5482b"/>
+              <path d="M42 40v-4a4 4 0 0 1 8 0v4"/>
+            </svg>
+            <h3>Open a pocket</h3>
+            <p>Choose a passphrase. Cloak creates a private pocket account and locks its key with AES-256 before anything is saved.</p>
+          </div>
+          <div class="step reveal">
+            <span class="idx">STEP 02</span>
+            <svg viewBox="0 0 92 92" fill="none" stroke="#16130f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="14" y="30" width="64" height="44" rx="4" fill="#fbf8f2"/>
+              <path d="M14 34l32 22 32-22"/>
+              <path d="M46 10v18M39 21l7 7 7-7"/>
+              <circle cx="46" cy="62" r="9" fill="#e5482b" stroke="#e5482b"/>
+              <path d="M42 62h8M46 58v8" stroke="#fbf8f2"/>
+            </svg>
+            <h3>Drop it in</h3>
+            <p>Send SOL from Phantom into the pocket. Cloak writes a sealed note to your vault: a fingerprint of the amount and two random secrets.</p>
+          </div>
+          <div class="step reveal">
+            <span class="idx">STEP 03</span>
+            <svg viewBox="0 0 92 92" fill="none" stroke="#16130f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 78V20h30v58" fill="#fbf8f2"/>
+              <path d="M48 20l14 6v58l-14-6" fill="#ebe5d8"/>
+              <circle cx="56" cy="52" r="1.6" fill="#16130f"/>
+              <circle cx="72" cy="30" r="4" fill="#e5482b" stroke="none"/>
+              <circle cx="80" cy="50" r="3" fill="#e5482b" stroke="none"/>
+              <circle cx="74" cy="68" r="5" fill="#e5482b" stroke="none"/>
+              <path d="M64 44c4-6 6-9 7-11M64 56l12-4M64 64l6 3" stroke-dasharray="2 3"/>
+            </svg>
+            <h3>Leave by a new door</h3>
+            <p>Withdraw to new addresses that have never appeared on-chain, split into random amounts and sent in separate transactions.</p>
+          </div>
+          <div class="step reveal">
+            <span class="idx">STEP 04</span>
+            <svg viewBox="0 0 92 92" fill="none" stroke="#16130f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 46s14-22 36-22 36 22 36 22-14 22-36 22S10 46 10 46z" fill="#fbf8f2"/>
+              <circle cx="46" cy="46" r="11" fill="#e5482b" stroke="#e5482b"/>
+              <circle cx="46" cy="46" r="4" fill="#16130f" stroke="none"/>
+              <path d="M46 24V12M28 28l-6-9M64 28l6-9"/>
+              <path d="M10 46h18" stroke-dasharray="2 3"/>
+            </svg>
+            <h3>Show, don't tell</h3>
+            <p>Export a read-only view key that lists your notes without their secrets. Hand it to an accountant and they can audit you without being able to spend.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <section id="faq">
+    <!-- ENGINE -->
+    <section id="engine" class="night">
       <div class="wrap">
-        <div class="section-head"><span class="eyebrow">FAQ</span><h2>Questions people actually ask.</h2></div>
-        <details><summary>Is there a Cloak token?</summary><p>No. Cloak doesn't have a token, a presale or an airdrop. Anyone selling one is not us.</p></details>
-        <details><summary>Does Cloak hold my funds?</summary><p>No. Your pocket account's key is created in your browser and encrypted with your passphrase. If you lose the passphrase and haven't exported a backup, nobody can recover it.</p></details>
-        <details><summary>Why devnet only?</summary><p>Until the shared pool and the audit are done, using real money would give a false sense of privacy. Devnet SOL is free and can't be lost.</p></details>
-        <details><summary>Which wallets work?</summary><p>Phantom today. Any wallet that injects the standard Solana provider should work too.</p></details>
-      </div>
-    </section>
+        <div class="head reveal">
+          <span class="label">Under the hood</span>
+          <h2>Boring cryptography, <em>on purpose.</em></h2>
+          <p>Cloak uses only standard, well-tested building blocks that already ship in your browser. Nothing is homemade.</p>
+        </div>
+        <div class="spec">
+          <div class="term reveal">
+            <div class="term-bar"><i></i><i></i><i></i><span>vault.js — runs locally</span></div>
+<pre><span class="c">// 1. your passphrase becomes a key</span>
+<span class="k">key</span> = PBKDF2(passphrase, salt, <span class="s">310_000</span>, SHA-256)
 
-    <section>
-      <div class="wrap">
-        <div class="cta-band">
-          <h2>Draw the curtains.</h2>
-          <p>Grab some devnet SOL and try the whole flow in about two minutes.</p>
-          <div class="cta-row" style="justify-content:center"><a class="btn btn-ember" href="app.html">Launch Cloak</a></div>
+<span class="c">// 2. the vault is sealed with it</span>
+<span class="k">vault</span> = AES-GCM-256(key, iv, {
+  pocket, notes, freshKeys
+})
+
+<span class="c">// 3. every deposit gets a sealed note</span>
+<span class="k">note</span> = SHA-256(amount ‖ secret ‖ nullifier)
+
+<span class="c">// 4. every exit gets a brand-new keypair</span>
+<span class="k">fresh</span> = ed25519.generate()</pre>
+          </div>
+          <dl class="facts reveal">
+            <div class="fact"><dt>Server</dt><dd>None. Cloak is static files: HTML, CSS and one script you can read in an afternoon.</dd></div>
+            <div class="fact"><dt>Tracking</dt><dd>No analytics, no cookies, no fingerprinting. The only network calls go to the Solana RPC.</dd></div>
+            <div class="fact"><dt>Storage</dt><dd>One encrypted blob in your browser. Download it as a backup, or delete it from the app whenever you like.</dd></div>
+            <div class="fact"><dt>Signing</dt><dd>Phantom signs deposits. Cloak signs exits locally with keys only your vault holds.</dd></div>
+            <div class="fact"><dt>Code</dt><dd>Open source on <a href="https://github.com/jaypacino337/Cloak">GitHub</a>. Read it, fork it, or self-host it.</dd></div>
+          </dl>
         </div>
       </div>
     </section>
+
+    <!-- FINE PRINT -->
+    <section id="fineprint">
+      <div class="wrap">
+        <div class="head reveal">
+          <span class="label">The fine print, printed large</span>
+          <h2>What Cloak protects <em>today</em>, and what's still coming.</h2>
+          <p>A privacy tool that oversells itself is worse than none at all. So here's exactly where things stand.</p>
+        </div>
+        <div class="table-scroll reveal">
+          <table class="ledger">
+            <thead><tr><th>Concern</th><th>Today (devnet)</th><th>With the shared pool</th></tr></thead>
+            <tbody>
+              <tr><td>Your keys</td><td><span class="chip yes">covered</span>Created and encrypted in your browser and never uploaded.</td><td><span class="chip yes">covered</span>No change.</td></tr>
+              <tr><td>Address reuse</td><td><span class="chip yes">covered</span>Every exit uses a keypair that has never been seen before.</td><td><span class="chip yes">covered</span>No change.</td></tr>
+              <tr><td>Wallet → pocket link</td><td><span class="chip no">visible</span>Anyone can follow the hop from your wallet to your pocket to your exits.</td><td><span class="chip soon">planned</span>Deposits mix in a shared pool, and zero-knowledge proofs break the link.</td></tr>
+              <tr><td>Amounts</td><td><span class="chip no">visible</span>Random splits help a little, but every SOL amount is public.</td><td><span class="chip soon">planned</span>Fixed denominations and batching.</td></tr>
+              <tr><td>Your IP</td><td><span class="chip no">visible</span>The RPC provider can see your IP address. Use a VPN or your own node.</td><td><span class="chip soon">planned</span>Relayers submit transactions for you.</td></tr>
+              <tr><td>Independent audit</td><td><span class="chip no">not yet</span>Don't use Cloak for funds that matter.</td><td><span class="chip soon">required</span>No mainnet until an audit is done.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAPTERS -->
+    <section style="padding-top:20px">
+      <div class="wrap">
+        <div class="head reveal">
+          <span class="label">Roadmap</span>
+          <h2>Built in chapters.</h2>
+        </div>
+        <div class="chapters">
+          <div class="chapter now reveal"><span class="when">out now</span><div class="roman">I</div><h3>The pocket</h3><p>Browser vault, sealed notes, fresh-address exits, view keys and encrypted backups, all on devnet.</p></div>
+          <div class="chapter reveal"><span class="when">next</span><div class="roman">II</div><h3>The pool</h3><p>A shared on-chain program where everyone's deposits sit together and become hard to tell apart.</p></div>
+          <div class="chapter reveal"><span class="when">then</span><div class="roman">III</div><h3>The proof</h3><p>Zero-knowledge withdrawals: prove you own a note without revealing which note it is.</p></div>
+          <div class="chapter reveal"><span class="when">gate</span><div class="roman">IV</div><h3>The audit</h3><p>An independent security review happens before anything goes near mainnet. This step can't be skipped.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" style="padding-top:40px">
+      <div class="wrap faq">
+        <div class="reveal">
+          <span class="label">FAQ</span>
+          <h2>Fair <em>questions.</em></h2>
+        </div>
+        <div>
+          <details><summary>Is there a Cloak token?</summary><p>No. There's no token, presale, airdrop or "early access" list. If someone offers you one, it isn't from this project.</p></details>
+          <details><summary>Can you see or freeze my funds?</summary><p>No. Cloak has no server, so there's nothing to see and no switch to flip. Your pocket key exists only inside your encrypted vault, which also means nobody can recover it if you lose your passphrase and your backup.</p></details>
+          <details><summary>Why only devnet?</summary><p>Today the hop into your pocket is still visible on-chain. Running on mainnet before the shared pool and the audit exist would give people a false sense of safety. Devnet SOL is free, so you can try every feature without risk.</p></details>
+          <details><summary>Which wallets work?</summary><p>Phantom on desktop, or Phantom's in-app browser on mobile. Turn on Testnet Mode in Phantom (Settings → Developer Settings) so your balance shows devnet SOL.</p></details>
+          <details><summary>Can I run my own copy?</summary><p>Yes. Clone the repo and serve the folder with any static host. There's no build step and nothing to configure.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <div class="closer">
+      <div class="wrap reveal">
+        <h2>Keep it to <em>yourself.</em></h2>
+        <p>Grab some free devnet SOL and try the whole flow in about two minutes.</p>
+        <div class="cta-row" style="justify-content:center"><a class="btn btn-ink" href="app.html">Open Cloak <span class="arrow">→</span></a></div>
+      </div>
+    </div>
   </main>
 
   <footer>
     <div class="wrap">
-      <div class="brand"><img src="assets/logo.svg" alt="" />Cloak</div>
-      <div class="links">
-        <a href="#flow">How it works</a>
-        <a href="#hidden">Privacy</a>
-        <a href="#status">Status</a>
-        <a href="app.html">App</a>
+      <div class="foot-top">
+        <span>Experimental software · devnet only · not audited</span>
+        <nav>
+          <a href="#ritual">How it works</a>
+          <a href="#fineprint">Fine print</a>
+          <a href="app.html">App</a>
+          <a href="https://github.com/jaypacino337/Cloak">Source</a>
+        </nav>
       </div>
-      <div>Experimental software. Devnet only. Use at your own risk.</div>
+      <div class="wordmark">cloak<b>.</b></div>
     </div>
   </footer>
+
+  <script src="assets/site.js"></script>
 </body>
 </html>

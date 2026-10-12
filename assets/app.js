@@ -5,10 +5,22 @@
 (() => {
   "use strict";
 
+  // The web3.js browser bundle encodes u64 amounts with a global Buffer that browsers don't have.
+  // Borrow the polyfill the bundle already ships with.
+  if (!window.Buffer) window.Buffer = solanaWeb3.PublicKey.default.toBuffer().constructor;
+
   const { Connection, Keypair, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL, clusterApiUrl } = solanaWeb3;
 
   const CLUSTER = "devnet";
-  const RPC = clusterApiUrl(CLUSTER);
+  // Optional ?rpc=https://your-node for people who'd rather not use the public endpoint.
+  const RPC = (() => {
+    const custom = new URLSearchParams(location.search).get("rpc");
+    try {
+      if (custom && /^https?:$/.test(new URL(custom).protocol)) return custom;
+    } catch {}
+    return clusterApiUrl(CLUSTER);
+  })();
+  const CUSTOM_RPC = RPC !== clusterApiUrl(CLUSTER);
   const STORAGE_KEY = "cloak.vault.v1";
   const PBKDF2_ITERATIONS = 310000;
   const FEE_LAMPORTS = 5000;
@@ -36,7 +48,10 @@
   const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
   const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
   const randomBytes = (n) => crypto.getRandomValues(new Uint8Array(n));
-  const explorer = (sig) => `https://explorer.solana.com/tx/${sig}?cluster=${CLUSTER}`;
+  const explorer = (sig) =>
+    CUSTOM_RPC
+      ? `https://explorer.solana.com/tx/${sig}?cluster=custom&customUrl=${encodeURIComponent(RPC)}`
+      : `https://explorer.solana.com/tx/${sig}?cluster=${CLUSTER}`;
 
   let toastTimer;
   function toast(msg, isError = false) {
@@ -187,7 +202,12 @@
   async function connectWallet() {
     const provider = getProvider();
     if (!provider) {
-      window.open("https://phantom.app/", "_blank", "noopener");
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // Reopen this page inside Phantom's in-app browser.
+        location.href = `https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.origin)}`;
+        return;
+      }
+      window.open("https://phantom.app/download", "_blank", "noopener");
       throw new Error("Phantom not found. Install it, then reload this page.");
     }
     const res = await provider.connect();
@@ -209,6 +229,7 @@
     try {
       if (state.wallet) {
         const bal = await connection.getBalance(state.wallet);
+        state.walletLamports = bal;
         $("wallet-balance").innerHTML = `${sol(bal)} <small>SOL</small>`;
       }
       if (state.pocket) {
@@ -255,7 +276,7 @@
     // Sign in Phantom, but submit ourselves so the transfer always goes to devnet.
     const signed = await state.provider.signTransaction(tx);
     const sig = await connection.sendRawTransaction(signed.serialize());
-    log(`Sealing ${sol(lamports)} SOL…`, sig);
+    log(`Dropping ${sol(lamports)} SOL into pocket…`, sig);
     await confirmTx(sig, blockhash, lastValidBlockHeight);
 
     const note = await makeNote(lamports, sig);
@@ -263,7 +284,7 @@
     await sealVault();
     $("seal-amt").value = "";
     log(`Sealed note ${note.id}`);
-    toast(`Sealed ${sol(lamports)} SOL`);
+    toast(`${sol(lamports)} SOL is in your pocket`);
     await refreshBalances();
     render();
   }
@@ -321,7 +342,7 @@
       );
       tx.sign(state.pocket);
       const sig = await connection.sendRawTransaction(tx.serialize());
-      log(`Scatter ${sol(d.lamports)} SOL → ${short(d.pubkey.toBase58())}`, sig);
+      log(`Leave ${sol(d.lamports)} SOL → ${short(d.pubkey.toBase58())}`, sig);
       await confirmTx(sig, blockhash, lastValidBlockHeight);
       const rec = state.vault.fresh.find((f) => f.pubkey === d.pubkey.toBase58());
       if (rec) rec.sig = sig;
@@ -337,7 +358,7 @@
     await sealVault();
     $("scatter-amt").value = "";
     $("scatter-to").value = "";
-    toast(`Scattered ${sol(sent)} SOL to ${destinations.length} address${destinations.length > 1 ? "es" : ""}`);
+    toast(`Sent ${sol(sent)} SOL to ${destinations.length} address${destinations.length > 1 ? "es" : ""}`);
     await refreshBalances();
     render();
   }
@@ -390,7 +411,25 @@
     return e;
   }
 
+  function setAddr(id, pk) {
+    const node = $(id);
+    if (!pk) { node.textContent = id === "wallet-addr" ? "not connected" : "—"; node.classList.remove("copy"); return; }
+    const full = pk.toBase58();
+    node.textContent = short(full, 6);
+    node.title = `${full} (click to copy)`;
+    node.dataset.full = full;
+    node.classList.add("copy");
+  }
+
+  function emptyState(text) {
+    const box = el("div", "empty");
+    box.innerHTML = '<svg viewBox="0 0 72 72" fill="none" stroke="#6f675b" stroke-width="1.6" stroke-linecap="round"><path d="M16 22h40v22c0 10-9 18-20 18s-20-8-20-18V22z"/><path d="M20 28h32" stroke-dasharray="3 4"/></svg>';
+    box.append(el("div", null, text));
+    return box;
+  }
+
   function render() {
+    setAddr("wallet-addr", state.wallet);
     const unlocked = !!state.vault;
     $("gate").classList.toggle("hidden", unlocked);
     $("main").classList.toggle("hidden", !unlocked);
@@ -400,27 +439,27 @@
       $("gate-title").textContent = existing ? "Unlock your vault" : "Create your vault";
       $("gate-hint").textContent = existing
         ? "Enter your passphrase to decrypt your vault in this browser."
-        : "Pick a passphrase to encrypt your pocket key, notes and fresh addresses in this browser. There's no reset, so write it down.";
+        : "Choose a passphrase. It encrypts your pocket key, notes and fresh addresses right here in this browser. There's no reset link, so write it down somewhere safe.";
       $("pass2-wrap").classList.toggle("hidden", !!existing);
       $("gate-go").textContent = existing ? "Unlock" : "Create vault";
       $("gate-wipe").classList.toggle("hidden", !existing);
+      $("gate-restore").classList.toggle("hidden", !!existing);
       $("vault-state").textContent = existing ? "locked" : "no vault";
-      $("pocket-addr").textContent = "—";
+      setAddr("pocket-addr", null);
       $("note-count").textContent = "0";
       $("fresh-count").textContent = "0";
       return;
     }
 
     $("vault-state").textContent = "unlocked";
-    $("pocket-addr").textContent = short(state.pocket.publicKey.toBase58(), 6);
-    $("pocket-addr").title = state.pocket.publicKey.toBase58();
+    setAddr("pocket-addr", state.pocket.publicKey);
     const unspent = state.vault.notes.filter((n) => !n.spent);
     $("note-count").textContent = `${unspent.length} · ${sol(unspentTotal())} SOL`;
     $("fresh-count").textContent = String(state.vault.fresh.length);
 
     const notesBox = $("notes");
     notesBox.replaceChildren();
-    if (!state.vault.notes.length) notesBox.append(el("p", "hint", "No notes yet. Seal some SOL first."));
+    if (!state.vault.notes.length) notesBox.append(emptyState("No notes yet. Drop some SOL into your pocket first."));
     for (const n of [...state.vault.notes].reverse()) {
       const card = el("div", `note${n.spent ? " spent" : ""}`);
       const top = el("div", "note-top");
@@ -431,7 +470,7 @@
 
     const freshBox = $("fresh");
     freshBox.replaceChildren();
-    if (!state.vault.fresh.length) freshBox.append(el("p", "hint", "None yet."));
+    if (!state.vault.fresh.length) freshBox.append(emptyState("No fresh addresses yet. They show up here after you leave."));
     for (const f of [...state.vault.fresh].reverse()) {
       const card = el("div", "note");
       const top = el("div", "note-top");
@@ -485,6 +524,7 @@
 
   $("lock").addEventListener("click", () => {
     state.vault = state.cryptoKey = state.pocket = null;
+    state.pocketLamports = undefined;
     $("pocket-balance").innerHTML = "— <small>SOL</small>";
     log("Vault locked");
     render();
@@ -495,22 +535,58 @@
     if (blob) download(`cloak-vault-backup-${Date.now()}.json`, blob);
   });
 
-  $("restore").addEventListener("change", async (e) => {
+  async function restoreFrom(e) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     try {
       const blob = JSON.parse(await file.text());
-      if (blob?.v !== 1 || !blob.ct || !blob.iv || !blob.salt) throw new Error("Not a Cloak backup file.");
+      if (blob?.v !== 1 || !blob.ct || !blob.iv || !blob.salt) throw new Error("That isn't a Cloak backup file.");
       if (storedVault() && !window.confirm("Replace the vault in this browser with this backup?")) return;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(blob));
       state.vault = state.cryptoKey = state.pocket = null;
-      log("Backup restored. Unlock with its passphrase.");
+      log("Backup restored. Unlock it with its passphrase.");
+      toast("Backup restored. Enter its passphrase.");
       render();
     } catch (err) {
       toast(err.message, true);
     }
+  }
+  $("restore").addEventListener("change", restoreFrom);
+  $("restore-gate").addEventListener("change", restoreFrom);
+
+  // click-to-copy addresses
+  document.addEventListener("click", async (e) => {
+    const node = e.target.closest(".copy");
+    if (!node?.dataset.full) return;
+    try {
+      await navigator.clipboard.writeText(node.dataset.full);
+      toast("Address copied");
+    } catch {
+      toast(node.dataset.full);
+    }
   });
+
+  // amount presets
+  document.querySelectorAll(".presets").forEach((group) =>
+    group.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-v]");
+      if (!btn) return;
+      const input = $(group.dataset.for);
+      let v = btn.dataset.v;
+      if (v === "max") {
+        if (group.dataset.for === "seal-amt") {
+          v = Math.max(0, (state.walletLamports ?? 0) - 0.002 * LAMPORTS_PER_SOL);
+        } else {
+          const parts = $("scatter-to").value.trim() ? 1 : Number($("scatter-parts").value);
+          v = Math.max(0, Math.min(state.vault ? unspentTotal() : 0, (state.pocketLamports ?? 0) - parts * FEE_LAMPORTS));
+        }
+        v = Math.floor(v / 1e3) / 1e6; // lamports → SOL, trimmed to 6 decimals
+      }
+      input.value = v;
+      input.focus();
+    })
+  );
 
   document.querySelectorAll(".tab").forEach((tab) =>
     tab.addEventListener("click", () => {
@@ -529,10 +605,12 @@
         state.wallet = new PublicKey(res.publicKey.toString());
         $("connect").textContent = short(state.wallet.toBase58());
         $("airdrop").disabled = false;
+        render();
         refreshBalances();
       })
       .catch(() => {});
   }
 
+  if (CUSTOM_RPC) log(`Using custom RPC ${RPC}`);
   render();
 })();
