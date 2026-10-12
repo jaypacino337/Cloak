@@ -241,6 +241,7 @@
         const bal = await connection.getBalance(state.pocket.publicKey);
         state.pocketLamports = bal;
         $("pocket-balance").innerHTML = `${sol(bal)} <small>SOL</small>`;
+        renderMap();
       }
     } catch (err) {
       log(`Balance refresh failed: ${err.message}`);
@@ -290,6 +291,7 @@
     $("seal-amt").value = "";
     log(`Sealed note ${note.id}`);
     toast(`${sol(lamports)} SOL is in your pocket`);
+    stamp("Sealed", `${sol(lamports)} SOL · note ${note.id.slice(0, 6)}`);
     await refreshBalances();
     render();
   }
@@ -363,6 +365,7 @@
     await sealVault();
     $("scatter-amt").value = "";
     $("scatter-to").value = "";
+    stamp("Fresh", `${destinations.length} new address${destinations.length > 1 ? "es" : ""}`);
     toast(`Sent ${sol(sent)} SOL to ${destinations.length} address${destinations.length > 1 ? "es" : ""}`);
     await refreshBalances();
     render();
@@ -416,6 +419,68 @@
     return e;
   }
 
+  function stamp(word, detail) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const wrap = el("div", "stamp");
+    const inner = el("div", null, word);
+    if (detail) inner.append(el("small", null, detail));
+    wrap.append(inner);
+    document.body.append(wrap);
+    setTimeout(() => wrap.remove(), 1600);
+  }
+
+  function renderStepper() {
+    const done = [!!state.wallet, !!state.vault, !!state.vault?.notes.length, !!state.vault?.fresh.length];
+    const current = done.indexOf(false);
+    document.querySelectorAll("#stepper .st").forEach((b, i) => {
+      b.classList.toggle("done", done[i]);
+      b.classList.toggle("current", i === current);
+      b.querySelector("i").textContent = done[i] ? "✓" : String(i + 1);
+    });
+  }
+
+  function openTab(name) {
+    document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+    document.querySelectorAll(".tab-body").forEach((b) => b.classList.toggle("active", b.id === `tab-${name}`));
+  }
+
+  function renderMap() {
+    const svg = $("map");
+    const W = 640, cy = 130;
+    const fresh = state.vault ? state.vault.fresh.slice(-6) : [];
+    const extra = state.vault ? state.vault.fresh.length - fresh.length : 0;
+    const hasDeposit = !!state.vault?.notes.length;
+    const shortK = (pk) => (pk ? short(typeof pk === "string" ? pk : pk.toBase58()) : "—");
+    const faded = (on) => (on ? "1" : ".28");
+    let out = "";
+    // edges
+    out += `<path d="M96 ${cy} C 180 ${cy}, 200 ${cy}, 262 ${cy}" fill="none" stroke="#16130f" stroke-width="2" class="${hasDeposit ? "flow" : ""}" opacity="${faded(hasDeposit)}"/>`;
+    const ys = fresh.map((_, i) => (fresh.length === 1 ? cy : 40 + (i * 180) / Math.max(1, fresh.length - 1)));
+    fresh.forEach((f, i) => {
+      out += `<path d="M338 ${cy} C 420 ${cy}, 440 ${ys[i]}, 518 ${ys[i]}" fill="none" stroke="#e5482b" stroke-width="2" class="flow"/>`;
+    });
+    if (!fresh.length) out += `<path d="M338 ${cy} C 420 ${cy}, 440 ${cy}, 518 ${cy}" fill="none" stroke="#e5482b" stroke-width="2" stroke-dasharray="5 6" opacity=".28"/>`;
+    // wallet node
+    out += `<g opacity="${faded(!!state.wallet)}"><circle cx="70" cy="${cy}" r="26" fill="#fbf8f2" stroke="#16130f" stroke-width="2"/><circle cx="70" cy="${cy}" r="7" fill="#16130f"/>`;
+    out += `<text x="70" y="${cy + 46}" text-anchor="middle" class="lbl">Wallet</text><text x="70" y="${cy + 62}" text-anchor="middle">${shortK(state.wallet)}</text></g>`;
+    // pocket node
+    out += `<g opacity="${faded(!!state.vault)}"><rect x="262" y="${cy - 30}" width="76" height="60" rx="14" fill="#16130f"/><path d="M286 ${cy - 6}v-6a14 14 0 0 1 28 0v6" fill="none" stroke="#f4f0e8" stroke-width="2"/><rect x="282" y="${cy - 6}" width="36" height="22" rx="4" fill="#e5482b"/>`;
+    const pocketSol = state.pocketLamports != null && state.vault ? `${sol(state.pocketLamports)} SOL` : shortK(state.pocket?.publicKey);
+    out += `<text x="300" y="${cy + 50}" text-anchor="middle" class="lbl">Pocket</text><text x="300" y="${cy + 66}" text-anchor="middle">${pocketSol}</text></g>`;
+    // fresh nodes
+    if (fresh.length) {
+      fresh.forEach((f, i) => {
+        out += `<circle cx="530" cy="${ys[i]}" r="10" fill="#e5482b"/><circle cx="530" cy="${ys[i]}" r="16" fill="none" stroke="#e5482b" opacity=".3"/>`;
+        out += `<text x="550" y="${ys[i] - 2}" class="lbl" style="font-size:11px">${shortK(f.pubkey)}</text><text x="550" y="${ys[i] + 12}">${sol(f.lamports)} SOL</text>`;
+      });
+      if (extra > 0) out += `<text x="530" y="254" text-anchor="middle">+${extra} more</text>`;
+    } else {
+      out += `<g opacity=".28"><circle cx="530" cy="${cy}" r="10" fill="#e5482b"/><text x="550" y="${cy + 4}" class="lbl">fresh addresses</text></g>`;
+    }
+    if (!state.wallet && !state.vault) out += `<text x="${W / 2}" y="24" text-anchor="middle">Your moves will draw themselves here.</text>`;
+    svg.innerHTML = out;
+  }
+
   function setAddr(id, pk) {
     const node = $(id);
     if (!pk) { node.textContent = id === "wallet-addr" ? "not connected" : "—"; node.classList.remove("copy"); return; }
@@ -435,6 +500,8 @@
 
   function render() {
     setAddr("wallet-addr", state.wallet);
+    renderStepper();
+    renderMap();
     const unlocked = !!state.vault;
     $("gate").classList.toggle("hidden", unlocked);
     $("main").classList.toggle("hidden", !unlocked);
@@ -593,10 +660,15 @@
     })
   );
 
-  document.querySelectorAll(".tab").forEach((tab) =>
-    tab.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-      document.querySelectorAll(".tab-body").forEach((b) => b.classList.toggle("active", b.id === `tab-${tab.dataset.tab}`));
+  document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => openTab(tab.dataset.tab)));
+
+  document.querySelectorAll("#stepper .st").forEach((b) =>
+    b.addEventListener("click", () => {
+      const step = Number(b.dataset.step);
+      if (step === 0) return state.wallet ? toast("Phantom is connected") : $("connect").click();
+      if (!state.vault) return $("pass").focus();
+      if (step === 2) { openTab("seal"); $("seal-amt").focus(); }
+      if (step === 3) { openTab("scatter"); $("scatter-amt").focus(); }
     })
   );
 

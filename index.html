@@ -12,6 +12,8 @@
   <meta property="og:url" content="https://jaypacino337.github.io/Cloak/" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -68,7 +70,7 @@
     <section id="exhibit">
       <div class="wrap exhibit">
         <div class="receipt-wrap reveal">
-          <div class="receipt">
+          <div class="receipt" id="receipt" aria-live="polite">
             <h4>The Corner Café</h4>
             <div class="center">paid in SOL · thanks for visiting</div>
             <hr />
@@ -95,6 +97,14 @@
             <div class="annot reveal"><span class="n">2</span><div><h3>Everyone you pay learns your address</h3><p>Once someone has it, a block explorer shows them your balance, your trades and your habits in about ten seconds.</p></div></div>
             <div class="annot reveal"><span class="n">3</span><div><h3>Data firms connect the dots</h3><p>Analytics companies group wallets that interact into clusters, so one slip can tie together accounts you meant to keep apart.</p></div></div>
           </div>
+          <form class="lookup reveal" id="lookup" autocomplete="off">
+            <label for="lookup-addr">Don't take our word for it. Print a real receipt.</label>
+            <div class="lookup-row">
+              <input id="lookup-addr" placeholder="Paste any Solana wallet address" spellcheck="false" />
+              <button class="btn btn-signal" type="submit" id="lookup-go">Print <span class="arrow">→</span></button>
+            </div>
+            <p class="hint" id="lookup-hint">Read-only. The lookup goes straight from your browser to a Solana node, and nothing is stored.</p>
+          </form>
         </div>
       </div>
     </section>

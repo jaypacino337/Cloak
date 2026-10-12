@@ -14,9 +14,10 @@ const TYPES = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".ico": "image/x-icon",
+  ".webmanifest": "application/manifest+json",
 };
 // Only these get served; everything else (server.js, package.json, .git…) is a 404.
-const PUBLIC = new Set(["index.html", "app.html", "assets"]);
+const PUBLIC = new Set(["index.html", "app.html", "404.html", "site.webmanifest", "assets"]);
 const SECURITY = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -37,15 +38,14 @@ http
     if (urlPath === "/app") urlPath = "/app.html";
     const file = path.normalize(path.join(ROOT, urlPath));
     const top = path.relative(ROOT, file).split(path.sep)[0];
-    if (!file.startsWith(ROOT + path.sep) || !PUBLIC.has(top)) {
-      res.writeHead(404, SECURITY).end("Not found");
-      return;
-    }
+    const notFound = () =>
+      fs.readFile(path.join(ROOT, "404.html"), (e, page) => {
+        res.writeHead(404, { ...SECURITY, "Content-Type": "text/html; charset=utf-8" });
+        res.end(e ? "Not found" : page);
+      });
+    if (!file.startsWith(ROOT + path.sep) || !PUBLIC.has(top)) return notFound();
     fs.readFile(file, (err, data) => {
-      if (err) {
-        res.writeHead(404, SECURITY).end("Not found");
-        return;
-      }
+      if (err) return notFound();
       const type = TYPES[path.extname(file)] || "application/octet-stream";
       const cache = file.includes(`${path.sep}assets${path.sep}`) && !file.endsWith("config.js") ? "public, max-age=3600" : "no-cache";
       res.writeHead(200, { ...SECURITY, "Content-Type": type, "Cache-Control": cache });

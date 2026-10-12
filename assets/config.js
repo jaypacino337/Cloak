@@ -8,6 +8,11 @@ window.CLOAK_CONFIG = {
   // Use a DEVNET link, and lock the key to your domain in your RPC dashboard, because this value is public.
   rpcUrl: "",
 
+  // MAINNET RPC link used only for the read-only "print a receipt" wallet lookup on the homepage.
+  // The free public node often blocks or rate-limits browsers, so add a free Helius MAINNET link
+  // (domain-locked). Leave empty to try the public node.
+  lookupRpcUrl: "",
+
   // Your pump.fun token. Leave empty and the site says "no token".
   // mint = the contract address (CA) pump.fun shows after you launch. It's public, so it's safe here.
   token: {

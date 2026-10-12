@@ -7,6 +7,8 @@
   <meta name="description" content="The Cloak devnet app: open a pocket, drop SOL in, leave through fresh addresses." />
   <meta name="theme-color" content="#f4f0e8" />
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -31,6 +33,13 @@
     <div class="notice">
       <span class="ico">!</span>
       <div><b>Practice mode.</b> Cloak runs on Solana devnet with free test SOL. Turn on <b>Testnet Mode</b> in Phantom (Settings → Developer Settings → Solana Devnet) so your balances match. The hop into your pocket is still visible on-chain. <a href="index.html#fineprint">Read the fine print</a>.</div>
+    </div>
+
+    <div class="stepper" id="stepper">
+      <button class="st" data-step="0"><i>1</i><span><small>step 1</small>Connect Phantom</span></button>
+      <button class="st" data-step="1"><i>2</i><span><small>step 2</small>Open a pocket</span></button>
+      <button class="st" data-step="2"><i>3</i><span><small>step 3</small>Drop SOL in</span></button>
+      <button class="st" data-step="3"><i>4</i><span><small>step 4</small>Leave fresh</span></button>
     </div>
 
     <div class="app-grid">
@@ -59,6 +68,7 @@
       </div>
 
       <!-- right column -->
+      <div>
       <div class="panel">
         <!-- vault gate -->
         <div id="gate">
@@ -136,6 +146,13 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="panel map-panel">
+        <div class="panel-h"><h3>Your map</h3><span class="sub">what the chain sees</span></div>
+        <svg class="map" id="map" viewBox="0 0 640 260" role="img" aria-label="Map of your wallet, pocket and fresh addresses"></svg>
+        <div class="map-legend"><span>public link</span><span class="fresh">fresh address, no history</span></div>
+      </div>
       </div>
     </div>
   </main>
