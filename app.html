@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cloak App</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="index.html"><img src="assets/logo.svg" alt="" />Cloak</a>
+      <span class="pill" style="margin-left:auto"><span class="dot"></span><span id="cluster-label">devnet</span></span>
+      <button class="btn btn-primary btn-sm" id="connect">Connect Phantom</button>
+    </div>
+  </header>
+
+  <main class="wrap app-shell">
+    <div class="banner">
+      <span>⚠</span>
+      <div><b>Devnet preview.</b> Every transaction here uses free devnet SOL. Cloak doesn't run a shared pool yet, so the hop from your wallet to your pocket is visible on-chain. Read <a href="index.html#hidden" style="text-decoration:underline">what's hidden</a> before relying on it.</div>
+    </div>
+
+    <div class="app-grid">
+      <!-- left column -->
+      <div>
+        <div class="panel">
+          <h3>Public wallet <button class="btn btn-ghost btn-sm" id="airdrop" disabled>Airdrop 1 SOL</button></h3>
+          <div class="big" id="wallet-balance">— <small>SOL</small></div>
+          <div class="kv"><span>Address</span><span class="mono" id="wallet-addr">not connected</span></div>
+        </div>
+
+        <div class="panel">
+          <h3>Pocket <span id="vault-state" class="mono" style="font-size:.75rem;color:var(--muted)">no vault</span></h3>
+          <div class="big" id="pocket-balance">— <small>SOL</small></div>
+          <div class="kv"><span>Pocket address</span><span class="mono" id="pocket-addr">—</span></div>
+          <div class="kv"><span>Unspent notes</span><span class="mono" id="note-count">0</span></div>
+          <div class="kv"><span>Fresh addresses</span><span class="mono" id="fresh-count">0</span></div>
+        </div>
+
+        <div class="panel">
+          <h3>Activity</h3>
+          <div class="log" id="log"><div>Ready.</div></div>
+        </div>
+      </div>
+
+      <!-- right column -->
+      <div class="panel">
+        <!-- vault gate -->
+        <div id="gate">
+          <h3 id="gate-title">Create your vault</h3>
+          <p class="hint" id="gate-hint">Pick a passphrase to encrypt your pocket key, notes and fresh addresses in this browser. There's no reset, so write it down.</p>
+          <label for="pass">Passphrase</label>
+          <input id="pass" type="password" autocomplete="new-password" placeholder="at least 8 characters" />
+          <div id="pass2-wrap">
+            <label for="pass2">Confirm passphrase</label>
+            <input id="pass2" type="password" autocomplete="new-password" />
+          </div>
+          <div class="row">
+            <button class="btn btn-primary" id="gate-go">Create vault</button>
+            <button class="btn btn-ghost hidden" id="gate-wipe">Delete local vault</button>
+          </div>
+        </div>
+
+        <!-- main app -->
+        <div id="main" class="hidden">
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-tab="seal">Seal</button>
+            <button class="tab" data-tab="scatter">Scatter</button>
+            <button class="tab" data-tab="notes">Notes</button>
+            <button class="tab" data-tab="keys">Keys</button>
+          </div>
+
+          <div class="tab-body active" id="tab-seal">
+            <h3>Move SOL from Phantom into your pocket</h3>
+            <p class="hint">Phantom signs a transfer to your pocket, and Cloak records a sealed note: SHA-256(amount ‖ secret ‖ nullifier).</p>
+            <label for="seal-amt">Amount (SOL)</label>
+            <input id="seal-amt" type="number" min="0.001" step="0.001" placeholder="0.5" />
+            <div class="row"><button class="btn btn-primary" id="seal-go">Seal into pocket</button></div>
+          </div>
+
+          <div class="tab-body" id="tab-scatter">
+            <h3>Withdraw to fresh addresses</h3>
+            <p class="hint">Cloak creates a brand-new keypair for each piece, signs locally with your pocket key, and stores the new keys in your vault.</p>
+            <label for="scatter-amt">Total amount (SOL)</label>
+            <input id="scatter-amt" type="number" min="0.001" step="0.001" placeholder="0.4" />
+            <label for="scatter-parts">Split into</label>
+            <select id="scatter-parts">
+              <option value="1">1 address</option>
+              <option value="2" selected>2 addresses, random split</option>
+              <option value="3">3 addresses, random split</option>
+            </select>
+            <label for="scatter-to">Or send to an address you own (optional)</label>
+            <input id="scatter-to" type="text" placeholder="leave empty to generate fresh addresses" />
+            <div class="row"><button class="btn btn-ember" id="scatter-go">Scatter</button></div>
+          </div>
+
+          <div class="tab-body" id="tab-notes">
+            <h3>Sealed notes <button class="btn btn-ghost btn-sm" id="export-view">Export view key</button></h3>
+            <div class="notes" id="notes"><p class="hint">No notes yet. Seal some SOL first.</p></div>
+            <h3 style="margin-top:22px">Fresh addresses</h3>
+            <div class="notes" id="fresh"><p class="hint">None yet.</p></div>
+          </div>
+
+          <div class="tab-body" id="tab-keys">
+            <h3>Backup &amp; safety</h3>
+            <p class="hint">The backup file is your vault, still encrypted with your passphrase. Keep it somewhere safe. Without the file and the passphrase, your keys can't be recovered.</p>
+            <div class="row">
+              <button class="btn btn-ghost" id="backup">Download encrypted backup</button>
+              <label class="btn btn-ghost" style="margin:0">Restore backup<input type="file" id="restore" accept="application/json" class="hidden" /></label>
+            </div>
+            <div class="row">
+              <button class="btn btn-ghost" id="lock">Lock vault</button>
+              <button class="btn btn-ghost" id="refresh">Refresh balances</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="assets/app.js"></script>
+</body>
+</html>
